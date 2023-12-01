@@ -22,19 +22,17 @@ module Calibration = begin
         | d -> d + 1
 
     let word_or_number_digit_finder (line : string) =
-        let word_occurrences = seq {
+        let occurrences = seq {
             for word in word_numbers do
                 let first_index = line.IndexOf word in
                 if first_index > -1 then
                     yield (word_to_digit word, first_index, line.LastIndexOf word)
-        } in
-        let digit_occurrences = seq {
+
             for digit in 0 .. 9 do
                 let first_index = line.IndexOf (string digit) in
                 if first_index > -1 then
                     yield (digit, first_index, line.LastIndexOf (string digit))
-        }
-        let occurrences = Seq.concat (seq { word_occurrences ; digit_occurrences })
+        } in
         let first_digit = 
             occurrences
             |> Seq.minBy (fun (_, first, _) -> first)

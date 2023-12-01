@@ -4,9 +4,11 @@ open Lib
 open NUnit.Framework
 open FsUnit
 
-let sample_input = """
+let sample_input_raw = """
 Fill me in from the problem description!
 """
+
+let sample_input = sample_input_raw.Split "\n"
 
 [<TestFixture>]
 type ``Tests for solution`` ()=
