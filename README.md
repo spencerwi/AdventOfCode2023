@@ -15,6 +15,14 @@ $ dotnet new install ./
 
 ## Running solutions
 
-In every day, you can cd into the directory and run `dotnet run`.
+In every day, you can cd into the directory and run `dotnet run <INPUT_TXT_FILE_NAME` if you've saved your sample input to a text file, or something like this:
 
-For days on or after day7, you can also run unit tests by cd'ing into the directory and running `dotnet test`
+```
+dotnet run <<EOF
+yoursample
+inputgoes
+here
+EOF
+```
+
+if you've just got it on hand to copy-paste.
