@@ -1,7 +1,6 @@
 module Lib
 
 open System
-open System.Text.RegularExpressions
 
 module Calibration = begin
     let numeric_digit_finder (line : string) = 
