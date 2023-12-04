@@ -77,11 +77,13 @@ type LottoGame = {
                             queue.Enqueue(won_card)
                     done
             done;
-            let counts_of_each_card = 
-                cards_seen
-                |> Seq.countBy (fun card -> card.card_id)
-                |> Map.ofSeq
-            if debug then printfn "We ended up with %d cards; here's the breakdown of how many of each card we have: %A" (List.length cards_seen) counts_of_each_card;
+            if debug then begin
+                let counts_of_each_card = 
+                    cards_seen
+                    |> Seq.countBy (fun card -> card.card_id)
+                    |> Map.ofSeq;
+                printfn "We ended up with %d cards; here's the breakdown of how many of each card we have: %A" (List.length cards_seen) counts_of_each_card;
+            end;
             List.length cards_seen
 
 module Puzzle = begin
