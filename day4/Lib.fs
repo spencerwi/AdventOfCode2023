@@ -13,8 +13,8 @@ let (|RegEx|_|) p i =
 
 type LottoCard = {
     card_id : int
-    winning_numbers : int list
-    my_numbers : int list
+    winning_numbers : int Set
+    my_numbers : int Set
 }
     with
         static member parse (input_line : string) : LottoCard =
@@ -24,18 +24,18 @@ type LottoCard = {
                 let winning_numbers = 
                     groups["winning_numbers"].Captures
                     |> Seq.map (fun capture -> int <| capture.Value.Trim())
-                    |> List.ofSeq
+                    |> Set.ofSeq
                 in
                 let my_numbers = 
                     groups["my_numbers"].Captures
                     |> Seq.map (fun capture -> int <| capture.Value.Trim())
-                    |> List.ofSeq
+                    |> Set.ofSeq
                 in
                 { card_id = card_id; winning_numbers = winning_numbers; my_numbers = my_numbers }
             | _ -> failwith ("Invalid line: " + input_line)
 
         member this.matching_numbers : int =
-            Set.intersect (Set.ofList this.winning_numbers) (Set.ofList this.my_numbers)
+            Set.intersect this.winning_numbers this.my_numbers
             |> Set.count
 
         member this.score : int = 
