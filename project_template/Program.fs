@@ -9,6 +9,6 @@ let read_stdin_lines () : string array =
 [<EntryPoint>]
 let main args =
     let input = read_stdin_lines() in
-    printfn "Part 1: %s" (Puzzle.part1 input);
-    printfn "Part 2: %s" (Puzzle.part2 input);
+    printfn "Part 1: %A" (Puzzle.part1 input);
+    printfn "Part 2: %A" (Puzzle.part2 input);
     0

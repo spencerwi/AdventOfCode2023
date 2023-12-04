@@ -8,7 +8,7 @@ let sample_input_raw = """
 Fill me in from the problem description!
 """
 
-let sample_input = sample_input_raw.Split "\n"
+let sample_input = sample_input_raw.Trim().Split "\n"
 
 [<TestFixture>]
 type ``Tests for solution`` ()=
