@@ -60,7 +60,7 @@ type LottoGame = {
             |> Seq.map (fun card -> card.score)
             |> Seq.sum
 
-        member this.score_recursive (debug : bool) : int =
+        member this.score_complex (debug : bool) : int =
             let mutable cards_seen = [] in
             let mutable queue : Queue<LottoCard> = new Queue<LottoCard>(this.cards);
             while queue.Count > 0 do
@@ -91,10 +91,10 @@ module Puzzle = begin
         game.score_simple
 
     let part2 (game: LottoGame) (debug : bool) =
-        game.score_recursive debug
+        game.score_complex debug
 
     let solve (input: string seq) (debug_part2 : bool) =
         let game = LottoGame.parse input in
-        (part1 game, game.score_recursive debug_part2)
+        (part1 game, game.score_complex debug_part2)
 
 end
