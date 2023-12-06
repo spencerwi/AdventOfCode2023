@@ -116,7 +116,7 @@ type Garden = {
             let apply_reversed_group (group : RangeMapping list) (initial_value : int64) : int64 =
                 let maybe_applicable_mapping =
                     group
-                    |> Seq.map (fun mapping -> mapping.reversed())
+                    |> Seq.map _.reversed()
                     |> Seq.tryFind (fun reversed_mapping -> reversed_mapping.contains initial_value)
                 in
                 match maybe_applicable_mapping with

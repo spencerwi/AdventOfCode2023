@@ -22,7 +22,7 @@ type ``Supplies tests`` ()=
     [<Test>]
     member this.``It should determine power correctly`` ()=
         let supplies = { reds = 4; greens = 2; blues = 6 } in
-        supplies.power() 
+        supplies.power
         |> should equal 48
 
 
@@ -62,7 +62,7 @@ type ``ElfGame tests`` ()=
             |> Array.filter (not << String.IsNullOrWhiteSpace)
             |> Array.map ElfGame.Game.parse
         in
-        games |> Array.map (fun game -> game.minimum_supplies_required())
+        games |> Array.map _.minimum_supplies_required()
         |> should equal [|
             { reds = 4; greens = 2; blues = 6 };
             { reds = 1; greens = 3; blues = 4 };

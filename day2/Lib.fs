@@ -33,7 +33,7 @@ module ElfGame = begin
             )
             { reds = reds; greens = greens; blues = blues }
 
-        member this.power () : int =
+        member this.power : int =
             this.reds * this.greens * this.blues
 
 
@@ -85,7 +85,7 @@ module Puzzle = begin
         in 
         games
             |> Seq.filter (fun game -> game.can_be_played_with bag)
-            |> Seq.map (fun game -> game.id)
+            |> Seq.map _.id
             |> Seq.sum
 
     let part2 (input: string seq) =
@@ -95,7 +95,7 @@ module Puzzle = begin
             |> Seq.map ElfGame.Game.parse
         in 
         games
-            |> Seq.map (fun game -> game.minimum_supplies_required())
-            |> Seq.map (fun game_supplies -> game_supplies.power())
+            |> Seq.map _.minimum_supplies_required()
+            |> Seq.map _.power
             |> Seq.sum
 end

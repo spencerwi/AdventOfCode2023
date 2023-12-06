@@ -57,7 +57,7 @@ type LottoGame = {
 
         member this.score_simple : int =
             this.cards
-            |> Seq.map (fun card -> card.score)
+            |> Seq.map _.score
             |> Seq.sum
 
         member this.score_complex (debug : bool) : int =
@@ -80,7 +80,7 @@ type LottoGame = {
             if debug then begin
                 let counts_of_each_card = 
                     cards_seen
-                    |> Seq.countBy (fun card -> card.card_id)
+                    |> Seq.countBy _.card_id
                     |> Map.ofSeq;
                 printfn "We ended up with %d cards; here's the breakdown of how many of each card we have: %A" (List.length cards_seen) counts_of_each_card;
             end;

@@ -117,7 +117,7 @@ module Puzzle = begin
     let part1 (input: string seq) =
         let schematic = Schematic.parse input in
         schematic.part_numbers
-        |> Seq.map (fun part_number -> part_number.value)
+        |> Seq.map _.value
         |> Seq.sum
 
     let part2 (input: string seq) =
