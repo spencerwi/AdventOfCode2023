@@ -1,0 +1,80 @@
+module Lib
+open System
+
+module Strings = begin
+    let starts_with (prefix : string) (s : string) =
+        s.StartsWith prefix
+
+    let split_on_whitespace (s : string) = 
+        s.Split() 
+
+    let replace (find : string) (replace_with : string) (s : string) =
+        s.Replace(find, replace_with)
+end
+
+
+type Race = {
+    time : int64
+    record_distance : int64
+}
+    with
+        static member parse_multiple (input_lines : string seq) : Race seq =
+            let times = 
+                input_lines
+                |> Seq.find (Strings.starts_with "Time: ")
+                |> Strings.replace "Time: " ""
+                |> Strings.split_on_whitespace
+                |> Seq.filter (not << String.IsNullOrWhiteSpace)
+                |> Seq.map int64
+            in
+            let distances = 
+                input_lines
+                |> Seq.find (Strings.starts_with "Distance: ")
+                |> Strings.replace "Distance: " ""
+                |> Strings.split_on_whitespace
+                |> Seq.filter (not << String.IsNullOrWhiteSpace)
+                |> Seq.map int64
+            in
+            Seq.zip times distances
+            |> Seq.map (fun (time, distance) -> { time = time; record_distance = distance })
+
+        static member parse_single (input_lines : string seq) : Race =
+            let time =
+                input_lines
+                |> Seq.find (Strings.starts_with "Time: ")
+                |> Strings.replace "Time: " ""
+                |> Strings.replace " " ""
+                |> int64
+            in
+            let distance =
+                input_lines
+                |> Seq.find (Strings.starts_with "Distance: ")
+                |> Strings.replace "Distance: " ""
+                |> Strings.replace " " ""
+                |> int64
+            in
+            { time = time; record_distance = distance }
+
+        member this.winning_strategy_count : int =
+            query { 
+                for hold_time in 1L..(this.time - 1L) do
+                    let speed = hold_time in
+                    let time_remaining = this.time - hold_time in
+                    let distance_traveled = speed * time_remaining in
+                    where (distance_traveled > this.record_distance)
+                    count
+            }
+
+
+module Puzzle = begin
+    let part1 (input: string seq) =
+        let races = Race.parse_multiple input in
+        races
+        |> Seq.map (fun race -> race.winning_strategy_count)
+        |> Seq.fold ( * ) 1
+
+
+    let part2 (input: string seq) =
+        let race = Race.parse_single input in
+        race.winning_strategy_count
+end
