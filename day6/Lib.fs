@@ -26,12 +26,12 @@ type Race = {
         static member parse (numbers_parser : string -> int64 seq) (input_lines : string seq) : Race seq =
             let times = 
                 input_lines
-                |> Strings.find_line_with_prefix_and_remove_it "Time :"
+                |> Strings.find_line_with_prefix_and_remove_it "Time:"
                 |> numbers_parser
             in
             let distances = 
                 input_lines
-                |> Strings.find_line_with_prefix_and_remove_it "Distance :"
+                |> Strings.find_line_with_prefix_and_remove_it "Distance:"
                 |> numbers_parser
             in
             Seq.zip times distances
