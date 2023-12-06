@@ -11,7 +11,7 @@ module Strings = begin
     let replace (find : string) (replace_with : string) (s : string) =
         s.Replace(find, replace_with)
 
-    let find_line_with_prefix_and_remove_it (prefix : string) (input_lines : string seq) : string =
+    let find_line_with_prefix_and_unprefix_it (prefix : string) (input_lines : string seq) : string =
         input_lines
         |> Seq.find (starts_with prefix)
         |> replace prefix ""
@@ -26,12 +26,12 @@ type Race = {
         static member parse (numbers_parser : string -> int64 seq) (input_lines : string seq) : Race seq =
             let times = 
                 input_lines
-                |> Strings.find_line_with_prefix_and_remove_it "Time:"
+                |> Strings.find_line_with_prefix_and_unprefix_it "Time:"
                 |> numbers_parser
             in
             let distances = 
                 input_lines
-                |> Strings.find_line_with_prefix_and_remove_it "Distance:"
+                |> Strings.find_line_with_prefix_and_unprefix_it "Distance:"
                 |> numbers_parser
             in
             Seq.zip times distances
