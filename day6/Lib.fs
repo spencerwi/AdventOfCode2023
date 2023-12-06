@@ -2,19 +2,10 @@ module Lib
 open System
 
 module Strings = begin
-    let starts_with (prefix : string) (s : string) =
-        s.StartsWith prefix
-
-    let split_on_whitespace (s : string) = 
-        s.Split() 
-
-    let replace (find : string) (replace_with : string) (s : string) =
-        s.Replace(find, replace_with)
-
     let find_line_with_prefix_and_unprefix_it (prefix : string) (input_lines : string seq) : string =
         input_lines
-        |> Seq.find (starts_with prefix)
-        |> replace prefix ""
+        |> Seq.find (_.StartsWith(prefix))
+        |> _.Replace(prefix, "")
 end
 
 
@@ -41,7 +32,7 @@ type Race = {
             input_lines
             |> Race.parse (fun numbers_line -> 
                 numbers_line
-                |> Strings.split_on_whitespace
+                |> _.Split()
                 |> Seq.filter (not << String.IsNullOrWhiteSpace)
                 |> Seq.map int64
             )
@@ -50,7 +41,7 @@ type Race = {
             input_lines
             |> Race.parse (fun numbers_line ->
                 numbers_line
-                |> Strings.replace " " ""
+                |> _.Replace(" ", "")
                 |> int64
                 |> Seq.singleton
             )
@@ -71,7 +62,7 @@ module Puzzle = begin
     let part1 (input: string seq) =
         let races = Race.parse_multiple input in
         races
-        |> Seq.map (fun race -> race.winning_strategy_count)
+        |> Seq.map _.winning_strategy_count
         |> Seq.fold ( * ) 1
 
 
