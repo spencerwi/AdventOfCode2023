@@ -10,6 +10,11 @@ module Strings = begin
 
     let replace (find : string) (replace_with : string) (s : string) =
         s.Replace(find, replace_with)
+
+    let find_line_with_prefix_and_remove_it (prefix : string) (input_lines : string seq) : string =
+        input_lines
+        |> Seq.find (starts_with prefix)
+        |> replace prefix ""
 end
 
 
@@ -18,42 +23,38 @@ type Race = {
     record_distance : int64
 }
     with
-        static member parse_multiple (input_lines : string seq) : Race seq =
+        static member parse (numbers_parser : string -> int64 seq) (input_lines : string seq) : Race seq =
             let times = 
                 input_lines
-                |> Seq.find (Strings.starts_with "Time: ")
-                |> Strings.replace "Time: " ""
-                |> Strings.split_on_whitespace
-                |> Seq.filter (not << String.IsNullOrWhiteSpace)
-                |> Seq.map int64
+                |> Strings.find_line_with_prefix_and_remove_it "Time :"
+                |> numbers_parser
             in
             let distances = 
                 input_lines
-                |> Seq.find (Strings.starts_with "Distance: ")
-                |> Strings.replace "Distance: " ""
-                |> Strings.split_on_whitespace
-                |> Seq.filter (not << String.IsNullOrWhiteSpace)
-                |> Seq.map int64
+                |> Strings.find_line_with_prefix_and_remove_it "Distance :"
+                |> numbers_parser
             in
             Seq.zip times distances
             |> Seq.map (fun (time, distance) -> { time = time; record_distance = distance })
 
+        static member parse_multiple (input_lines : string seq) : Race seq =
+            input_lines
+            |> Race.parse (fun numbers_line -> 
+                numbers_line
+                |> Strings.split_on_whitespace
+                |> Seq.filter (not << String.IsNullOrWhiteSpace)
+                |> Seq.map int64
+            )
+
         static member parse_single (input_lines : string seq) : Race =
-            let time =
-                input_lines
-                |> Seq.find (Strings.starts_with "Time: ")
-                |> Strings.replace "Time: " ""
+            input_lines
+            |> Race.parse (fun numbers_line ->
+                numbers_line
                 |> Strings.replace " " ""
                 |> int64
-            in
-            let distance =
-                input_lines
-                |> Seq.find (Strings.starts_with "Distance: ")
-                |> Strings.replace "Distance: " ""
-                |> Strings.replace " " ""
-                |> int64
-            in
-            { time = time; record_distance = distance }
+                |> Seq.singleton
+            )
+            |> Seq.head
 
         member this.winning_strategy_count : int =
             query { 
