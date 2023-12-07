@@ -2,34 +2,45 @@ module Lib
 open System
 
 module CardGame = begin
-    type ScoringMode =
+    type DeckType =
         | Jacks
         | Jokers
 
     type Card =
+        | Joker
         | Number of int
-        | JackOrJoker
+        | Jack
         | Queen
         | King
         | Ace
     with 
-        member this.value (scoring_mode : ScoringMode) = 
+        member this.value = 
             match this with
             | Number n -> n
-            | JackOrJoker when scoring_mode = Jacks -> 11
-            | JackOrJoker when scoring_mode = Jokers -> -1
+            | Jack -> 11
+            | Joker -> -1
             | Queen -> 12
             | King -> 13
             | Ace -> 14
 
-        static member parse = function
+        static member parse (deck_type : DeckType) = function
             | n when n > '0' && n <= '9' -> Number (n |> string |> int)
             | 'T' -> Number 10
-            | 'J' -> JackOrJoker
+            | 'J' when deck_type = Jacks -> Jack
+            | 'J' when deck_type = Jokers -> Joker
             | 'Q' -> Queen
             | 'K' -> King
             | 'A' -> Ace
             | other -> failwith (sprintf "Invalid card: %A" other)
+
+        member this.to_char = 
+            match this with
+            | Number 10 -> 'T'
+            | Number n -> n |> string |> Seq.head
+            | Jack | Joker -> 'J'
+            | Queen -> 'Q'
+            | King -> 'K'
+            | Ace -> 'A'
 
     type HandType =
         | HighCard
@@ -44,81 +55,92 @@ module CardGame = begin
         cards : Card array
     }
         with 
-            static member parse (input : string) : Hand =
+            static member parse (deck_type : DeckType) (input : string) : Hand =
                 if (input.Trim().Length) > 5 then
                     failwith (sprintf "Invalid hand \"%s\": Hands can only have 5 cards" (input.Trim()))
                 let cards = 
                     input
-                    |> Seq.map Card.parse
+                    |> Seq.map (Card.parse deck_type)
                     |> Array.ofSeq
                 in 
                 { 
                     cards = cards 
                 }
 
-            member this.score_with_jacks() =
-                let counts_of_each_card = 
-                    this.cards
-                    |> Seq.countBy id
-                in 
-                let highest_count = 
-                    counts_of_each_card
-                    |> Seq.maxBy (fun (card, count) -> count)
-                in
-                match highest_count with
-                | (_, 5) -> FiveOfAKind
-                | (_, 4) -> FourOfAKind
-                | (card, 3) -> 
-                    // is this a full house or just three-of-a-kind?
-                    let maybePair = 
-                        counts_of_each_card
-                        |> Seq.tryFind (fun (card, count) -> count = 2)
-                    in
-                    match maybePair with
-                    | Some (other_card, _) -> FullHouse 
-                    | None -> ThreeOfAKind 
-                | (card, 2) -> 
-                    let pairs = 
-                        counts_of_each_card
-                        |> Seq.filter (fun (card, count) -> count = 2)
-                        |> List.ofSeq
-                    in
-                    if pairs.Length = 2 then
-                        TwoPair 
-                    else
-                        OnePair
-                | _ -> 
-                    HighCard 
+            member this.contains_jokers : bool =
+                this.cards
+                |> Seq.exists ((=) Joker)
 
-            member this.score_with_jokers() =
-                let non_jacks = 
+            member this.convert_jokers() : Hand =
+                let non_jokers = 
                     this.cards
-                    |> Seq.filter (fun card -> card <> JackOrJoker)
+                    |> Seq.filter (fun card -> card <> Joker)
                     |> Seq.toList
                 in
-                match non_jacks with
-                | [] -> FiveOfAKind
-                | _ -> 
+                if non_jokers.IsEmpty then
+                    { cards = [|Ace;Ace;Ace;Ace;Ace|] } // Dude, you gotta have a poker face, like me. WOAH, FIVE ACES!
+                else
                     let card_counts = 
-                        non_jacks
+                        non_jokers
                         |> Seq.countBy id
                     in
                     let best_target_card = 
                         card_counts
-                        |> Seq.maxBy (fun (card, count) -> (count, card.value Jacks))
+                        |> Seq.maxBy (fun (card, count) -> (count, card.value))
                         |> fst
+                    in
                     let new_hand_cards = [|
                         for card in this.cards do
-                            if card = JackOrJoker then
+                            if card = Joker then
                                 yield best_target_card
                             else
                                 yield card
                     |]
                     in
-                    let new_hand = { 
-                        cards = new_hand_cards
-                    } in
-                    new_hand.score_with_jacks()
+                    { cards = new_hand_cards }
+
+            member this.score() =
+                if this.contains_jokers then
+                    this.convert_jokers().score()
+                else
+                    let counts_of_each_card = 
+                        this.cards
+                        |> Seq.countBy id
+                    in 
+                    let highest_count = 
+                        counts_of_each_card
+                        |> Seq.maxBy (fun (card, count) -> count)
+                    in
+                    match highest_count with
+                    | (_, 5) -> FiveOfAKind
+                    | (_, 4) -> FourOfAKind
+                    | (card, 3) -> 
+                        // is this a full house or just three-of-a-kind?
+                        let maybePair = 
+                            counts_of_each_card
+                            |> Seq.tryFind (fun (card, count) -> count = 2)
+                        in
+                        match maybePair with
+                        | Some (other_card, _) -> FullHouse 
+                        | None -> ThreeOfAKind 
+                    | (card, 2) -> 
+                        let pairs = 
+                            counts_of_each_card
+                            |> Seq.filter (fun (card, count) -> count = 2)
+                            |> List.ofSeq
+                        in
+                        if pairs.Length = 2 then
+                            TwoPair 
+                        else
+                            OnePair
+                    | _ -> 
+                        HighCard 
+                        
+            override this.ToString() : string =
+                this.cards
+                |> Seq.map _.to_char
+                |> String.Concat
+
                         
 
     type Player = {
@@ -126,32 +148,25 @@ module CardGame = begin
         hand : Hand
     }
         with
-            static member parse (input : string) =
+            static member parse (deck_type : DeckType) (input : string) =
                 match input.Split() with
                 | [|hand_str; bet_str|] ->
                     {
                         bet = int bet_str
-                        hand = Hand.parse hand_str
+                        hand = Hand.parse deck_type hand_str
                     }
                 | _ -> failwith (sprintf "Invalid round line: %s" input)
 
-    let rank_players (scoring_mode : ScoringMode) (players : Player seq) : Player seq =
-        let scoring_rule = 
-            match scoring_mode with
-            | Jacks -> _.hand.score_with_jacks()
-            | Jokers -> _.hand.score_with_jokers()
-        in
+    let rank_players (players : Player seq) : Player seq =
         players 
         |> Seq.sortWith (fun player1 player2 ->
-            match (scoring_rule player1, scoring_rule player2) with
+            match (player1.hand.score(), player2.hand.score()) with
             | (a, b) when a > b -> 1
             | (a, b) when a < b -> -1
             | _ ->
                 Seq.zip player1.hand.cards player2.hand.cards
                 |> Seq.map (fun (player1_card, player2_card) -> 
-                    let card1_value = player1_card.value scoring_mode in
-                    let card2_value = player2_card.value scoring_mode in
-                    compare card1_value card2_value
+                    compare player1_card.value player2_card.value
                 )
                 |> Seq.tryFind ((<>) 0)
                 |> Option.defaultValue 0
@@ -160,9 +175,10 @@ module CardGame = begin
 end
 
 module Puzzle = begin
-    let play_game (scoring_mode : CardGame.ScoringMode) (players : CardGame.Player seq) : int =
+    open CardGame
+    let play_game (players : Player seq) : int =
         players
-        |> CardGame.rank_players scoring_mode
+        |> CardGame.rank_players 
         |> Seq.mapi (fun index player ->
             let rank = index + 1 in // zero-based indexing
             rank * player.bet
@@ -171,13 +187,11 @@ module Puzzle = begin
 
     let part1 (input: string seq) =
         input
-        |> Seq.map CardGame.Player.parse
-        |> play_game CardGame.ScoringMode.Jacks
-
-            
+        |> Seq.map (Player.parse DeckType.Jacks)
+        |> play_game 
 
     let part2 (input: string seq) =
         input
-        |> Seq.map CardGame.Player.parse
-        |> play_game CardGame.ScoringMode.Jokers
+        |> Seq.map (Player.parse DeckType.Jokers)
+        |> play_game 
 end
