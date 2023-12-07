@@ -43,7 +43,11 @@ module ElfGame = begin
     }
         with 
             static member parse (line : string) : Game =
-                let [|game_id_part; rounds_str|] = line.Split ":" in
+                let (game_id_part, rounds_str) = 
+                    match line.Split ":" with
+                    | [|game_id_part; rounds_str|] -> (game_id_part, rounds_str)
+                    | _ -> failwith ("Invalid line: " + line)
+                in
                 let game_id = 
                     match game_id_part with
                     | RegEx "Game (?<game_id>\d+)" g ->

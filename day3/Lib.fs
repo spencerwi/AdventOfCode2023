@@ -105,10 +105,9 @@ type Schematic = {
                             |> Set.ofSeq
                         in
                         if (Set.count neighboring_part_numbers) = 2 then
-                            yield (
-                                let [|one; two|] = Set.toArray neighboring_part_numbers in
-                                (int64 one.value) * (int64 two.value)
-                            )
+                            match Set.toArray neighboring_part_numbers with
+                            | [|one; two|] -> yield (int64 one.value) * (int64 two.value)
+                            | _ -> ()
             }
 
 
