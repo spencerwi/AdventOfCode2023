@@ -159,19 +159,14 @@ module CardGame = begin
 
     let rank_players (players : Player seq) : Player seq =
         players 
-        |> Seq.sortWith (fun player1 player2 ->
-            match (player1.hand.score(), player2.hand.score()) with
-            | (a, b) when a > b -> 1
-            | (a, b) when a < b -> -1
-            | _ ->
-                Seq.zip player1.hand.cards player2.hand.cards
-                |> Seq.map (fun (player1_card, player2_card) -> 
-                    compare player1_card.value player2_card.value
-                )
-                |> Seq.tryFind ((<>) 0)
-                |> Option.defaultValue 0
+        |> Seq.sortBy (fun player -> 
+            let card_values = 
+                player.hand.cards
+                |> Seq.map _.value
+                |> Seq.toList
+            in
+            (player.hand.score(), card_values)
         )
-
 end
 
 module Puzzle = begin
