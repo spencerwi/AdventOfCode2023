@@ -128,6 +128,22 @@ module Puzzle = begin
         state.step_counter
 
     let part2 (input: string seq) =
+        // This seems to be one of those ones where the naive approach will take forever, and clever optimization is
+        //  needed. 
+        //
+        // Thinking through the problem statement, if we have _several_ positions, and all of them can be "arrived" 
+        // at the same point in time, then it must mean that we can safely move off of an end position knowing that
+        // we'll come back to it -- and if we're going to come back to it, that means we're going to loop.
+        //
+        // So the trick is: find out how many steps each start-position's loop is from start to finish, and then 
+        //  grab the least-common-multiple of those numbers (so that we have 1 complete longest loop, and N complete 
+        //  shorter loops).
+        //
+        // I probably won't hae time to implement that today, but I'm leaving a comment for future me to implement it
+        // so I don't forget this train of thought.
+        // 
+        // Below this line was my naive solution:
+        // -------------------------------------------
         let start_with_theAs = (fun (network : Network) -> 
             network.nodes.Keys
             |> Seq.filter (fun node_name -> 
