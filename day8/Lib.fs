@@ -45,7 +45,7 @@ module Pathfinding = begin
         with 
             static member parse (line : string) : Node =
                 match line with 
-                    | RegEx @"(?<name>[A-Z]+) = \((?<left>[A-Z]+), (?<right>[A-Z]+)\)" groups ->
+                    | RegEx @"(?<name>[0-9A-Z]+) = \((?<left>[0-9A-Z]+), (?<right>[0-9A-Z]+)\)" groups ->
                         let name = groups["name"].Value in
                         let left = groups["left"].Value in
                         let right = groups["right"].Value in
@@ -79,10 +79,10 @@ module Pathfinding = begin
         map : Network
         instructions : Instructions
         step_counter : int
-        current_position : string
+        current_positions : string array
     }
         with 
-            static member parse (lines : string seq) : State =
+            static member parse (start_position_finder : Network -> string array) (lines : string seq) : State =
                 let instructions = 
                     lines
                     |> Seq.head
@@ -93,32 +93,54 @@ module Pathfinding = begin
                     |> Seq.skip 2
                     |> Network.parse
                 in
+                let start_positions = 
+                    map |> start_position_finder
+                in
                 { 
                     map = map;
                     instructions = instructions
                     step_counter = 0 
-                    current_position = "AAA"
+                    current_positions = start_positions
                 }
 
             member this.step() : State =
                 let turn = this.instructions.turn_number (this.step_counter) in
-                let next = this.map[this.current_position].turn turn in
+                let next_positions = [|
+                    for position in this.current_positions do
+                        yield this.map[position].turn turn
+                |] in
                 { this with
                         step_counter = this.step_counter + 1
-                        current_position = next
+                        current_positions = next_positions
                 }
 
 
 end
 
 module Puzzle = begin
+    open Pathfinding
     let part1 (input: string seq) =
-        let mutable state = Pathfinding.State.parse input in
-        while state.current_position <> "ZZZ" do
+        let start_with_AAA = (fun _ -> [|"AAA"|])
+        let mutable state = State.parse start_with_AAA input in
+        while state.current_positions[0] <> "ZZZ" do
             state <- state.step()
         done;
-        state.step_counter + 0
+        state.step_counter
 
     let part2 (input: string seq) =
-        "the right answer"
+        let start_with_theAs = (fun (network : Network) -> 
+            network.nodes.Keys
+            |> Seq.filter (fun node_name -> 
+                node_name.EndsWith 'A'
+            )
+            |> Array.ofSeq
+        )
+        let all_ghosts_have_arrived (state : State) : bool =
+            state.current_positions
+            |> Seq.forall (fun position -> position.EndsWith 'Z')
+        let mutable state = Pathfinding.State.parse start_with_theAs input in
+        while not (all_ghosts_have_arrived state) do
+            state <- state.step()
+        done;
+        state.step_counter
 end

@@ -1,5 +1,6 @@
 module Tests
 open Lib
+open System
 
 open NUnit.Framework
 open FsUnit
@@ -27,5 +28,18 @@ type ``Tests for solution`` ()=
 
     [<Test>]
     member this.``It should solve part 2`` ()=
-        Puzzle.part2 sample_input
-        |> should equal "the right answer"
+        let part_2_input_raw = """LR
+
+11A = (11B, XXX)
+11B = (XXX, 11Z)
+11Z = (11B, XXX)
+22A = (22B, XXX)
+22B = (22C, 22C)
+22C = (22Z, 22Z)
+22Z = (22B, 22B)
+XXX = (XXX, XXX)""" 
+        let part_2_input = 
+            part_2_input_raw.Trim().Split "\n"
+        in
+        Puzzle.part2 part_2_input
+        |> should equal 6
