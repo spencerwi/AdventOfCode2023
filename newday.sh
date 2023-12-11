@@ -10,4 +10,4 @@ if [ -d "day$1" ]; then
 	exit 1;
 fi
 
-mkdir "day$1" && cd "day$1" && dotnet new advent_of_code_fs --language 'F#'
+mkdir "day$1" && cd "day$1" && dotnet new advent_of_code_fs --language 'F#' && dotnet restore
