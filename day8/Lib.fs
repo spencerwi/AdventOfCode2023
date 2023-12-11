@@ -1,6 +1,7 @@
 module Lib
 open System
 open System.Text.RegularExpressions
+open FSharp.Collections.ParallelSeq
 
 /// A RegEx active pattern for easier regexing
 let (|RegEx|_|) p i =
@@ -9,6 +10,18 @@ let (|RegEx|_|) p i =
         Some m.Groups
     else
         None
+
+/// We'll need least-common-multiple later. So these will give us that
+module MathExtras = begin
+    let rec greatest_common_divisor a b =
+        match (a,b) with
+        | (x, y) when x = y -> x
+        | (x, y) when x > y -> greatest_common_divisor (x-y) y
+        | (x, y) -> greatest_common_divisor x (y-x)
+
+    let least_common_multiple a b =
+        (a*b) / (greatest_common_divisor a b)
+end
 
 
 module Pathfinding = begin
@@ -151,12 +164,19 @@ module Puzzle = begin
             )
             |> Array.ofSeq
         )
-        let all_ghosts_have_arrived (state : State) : bool =
-            state.current_positions
-            |> Seq.forall (fun position -> position.EndsWith 'Z')
-        let mutable state = Pathfinding.State.parse start_with_theAs input in
-        while not (all_ghosts_have_arrived state) do
-            state <- state.step()
-        done;
-        state.step_counter
+        let mutable state = Pathfinding.State.parse start_with_theAs input in 
+        let mutable loop_lengths = Array.init state.current_positions.Length (fun _ -> None) in
+        while (Seq.exists Option.isNone loop_lengths) do
+            for (i, position) in Seq.indexed state.current_positions do
+                if loop_lengths[i].IsNone && position.EndsWith 'Z' then
+                    loop_lengths[i] <- Some state.step_counter
+            done
+            state <- state.step();
+        done
+
+        loop_lengths
+        |> PSeq.map Option.get
+        |> PSeq.reduce (fun acc next -> 
+            MathExtras.least_common_multiple acc next 
+        )
 end
