@@ -92,10 +92,10 @@ module Pathfinding = begin
         map : Network
         instructions : Instructions
         step_counter : int
-        current_positions : string array
+        current_position : string
     }
         with 
-            static member parse (start_position_finder : Network -> string array) (lines : string seq) : State =
+            static member parse (start_position : string) (lines : string seq) : State =
                 let instructions = 
                     lines
                     |> Seq.head
@@ -106,25 +106,19 @@ module Pathfinding = begin
                     |> Seq.skip 2
                     |> Network.parse
                 in
-                let start_positions = 
-                    map |> start_position_finder
-                in
                 { 
                     map = map;
                     instructions = instructions
                     step_counter = 0 
-                    current_positions = start_positions
+                    current_position = start_position
                 }
 
             member this.step() : State =
                 let turn = this.instructions.turn_number (this.step_counter) in
-                let next_positions = [|
-                    for position in this.current_positions do
-                        yield this.map[position].turn turn
-                |] in
+                let next_position = this.map[this.current_position].turn turn
                 { this with
                         step_counter = this.step_counter + 1
-                        current_positions = next_positions
+                        current_position = next_position
                 }
 
 
@@ -133,50 +127,30 @@ end
 module Puzzle = begin
     open Pathfinding
     let part1 (input: string seq) =
-        let start_with_AAA = (fun _ -> [|"AAA"|])
-        let mutable state = State.parse start_with_AAA input in
-        while state.current_positions[0] <> "ZZZ" do
+        let mutable state = State.parse "AAA" input in
+        while state.current_position <> "ZZZ" do
             state <- state.step()
         done;
         state.step_counter
 
     let part2 (input: string seq) =
-        // This seems to be one of those ones where the naive approach will take forever, and clever optimization is
-        //  needed. 
-        //
-        // Thinking through the problem statement, if we have _several_ positions, and all of them can be "arrived" 
-        // at the same point in time, then it must mean that we can safely move off of an end position knowing that
-        // we'll come back to it -- and if we're going to come back to it, that means we're going to loop.
-        //
-        // So the trick is: find out how many steps each start-position's loop is from start to finish, and then 
-        //  grab the least-common-multiple of those numbers (so that we have 1 complete longest loop, and N complete 
-        //  shorter loops).
-        //
-        // I probably won't hae time to implement that today, but I'm leaving a comment for future me to implement it
-        // so I don't forget this train of thought.
-        // 
-        // Below this line was my naive solution:
-        // -------------------------------------------
-        let start_with_theAs = (fun (network : Network) -> 
-            network.nodes.Keys
-            |> Seq.filter (fun node_name -> 
-                node_name.EndsWith 'A'
+        let base_state = Pathfinding.State.parse "AAA" input in 
+        let all_start_positions = 
+            base_state.map.nodes.Keys
+            |> PSeq.filter (fun node -> node.EndsWith "A")
+        in
+        let loop_lengths = 
+            all_start_positions
+            |> PSeq.map (fun position -> 
+                let mutable current = { base_state with current_position = position } in
+                while not (current.current_position.EndsWith 'Z') do
+                    current <- current.step()
+                done;
+                int64 current.step_counter
             )
-            |> Array.ofSeq
-        )
-        let mutable state = Pathfinding.State.parse start_with_theAs input in 
-        let mutable loop_lengths = Array.init state.current_positions.Length (fun _ -> None) in
-        while (Seq.exists Option.isNone loop_lengths) do
-            for (i, position) in Seq.indexed state.current_positions do
-                if loop_lengths[i].IsNone && position.EndsWith 'Z' then
-                    loop_lengths[i] <- Some state.step_counter
-            done
-            state <- state.step();
-        done
-
+        in
         loop_lengths
-        |> PSeq.map Option.get
-        |> PSeq.reduce (fun acc next -> 
+        |> Seq.reduce (fun acc next -> 
             MathExtras.least_common_multiple acc next 
         )
 end

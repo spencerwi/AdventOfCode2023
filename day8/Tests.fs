@@ -42,4 +42,4 @@ XXX = (XXX, XXX)"""
             part_2_input_raw.Trim().Split "\n"
         in
         Puzzle.part2 part_2_input
-        |> should equal 6
+        |> should equal 6L
