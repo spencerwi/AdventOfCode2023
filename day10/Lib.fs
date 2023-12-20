@@ -10,9 +10,9 @@ type Direction =
     with 
         static member values() : Direction seq =
             seq { 
-                North;
-                South;
-                East;
+                North
+                South
+                East
                 West
             }
 
@@ -24,15 +24,16 @@ type Direction =
             | West -> East
 
 type Coords = {
-    x: int
-    y: int
+    col: int
+    row: int
 }
     with 
         member this.move = function
-            | North -> { this with y = this.y - 1}
-            | South -> { this with y = this.y + 1}
-            | East -> { this with x = this.x + 1}
-            | West -> { this with x = this.x - 1}
+            | North -> { this with row = this.row - 1}
+            | South -> { this with row = this.row + 1}
+            | East -> { this with col = this.col + 1}
+            | West -> { this with col = this.col - 1}
+
 
 type PipeShape = 
     | Vertical 
@@ -81,90 +82,96 @@ type PipeShape =
             | West when this = TopRight -> true
             | _ -> false
 
+type Cell = 
+    | Pipe of PipeShape
+    | EmptySpace 
+    with 
+        override this.ToString() : string =
+            match this with
+            | Pipe p -> p.ToString()
+            | EmptySpace -> "."
+
+
 type Grid = {
-    pipes : Map<Coords, PipeShape>
+    cells : Cell[,]
     creature_start : Coords
 }
     with 
         static member parse (input : string array) =
             let mutable creature_start = None in
-            let mutable pipes = 
-                seq {
+            let mutable cells = 
+                array2D [|
                     for y in 0 .. (input.Length - 1) do
                         let line = input[y] in
-                        for x in 0 .. (line.Length - 1) do
-                            let coords = {x = x; y = y} in
-                            match line[x] with
-                            | 'S' -> 
-                                creature_start <- Some coords
-                            | other -> 
-                                match PipeShape.tryParse other with
-                                | Some pipeShape -> yield (coords, pipeShape)
-                                | _ -> ()
-                } |> Map.ofSeq
+                        yield [|
+                            for x in 0 .. (line.Length - 1) do
+                                let coords = {col = x; row = y} in
+                                match line[x] with
+                                | '.' -> yield EmptySpace
+                                | 'S' -> 
+                                    creature_start <- Some coords
+                                    yield EmptySpace
+                                | other -> 
+                                    match PipeShape.tryParse other with
+                                    | Some pipeShape -> yield (Pipe pipeShape)
+                                    | other -> failwith $"Invalid space at {coords}: {other}"
+                        |]
+                |]
             in
-            // Now replace the creature's start point with the appropriate pipe
-            let creature_start_pipe_connections = seq {
-                for direction_from_creature in Direction.values() do
-                    let candidate_neighbor = creature_start.Value.move direction_from_creature in
-                    if pipes.ContainsKey candidate_neighbor then
-                        let neighbor_pipe = pipes[candidate_neighbor] in
-                        let direction_from_neighbor = direction_from_creature.reversed() in
-                        if neighbor_pipe.connects_to direction_from_neighbor then
-                            yield direction_from_creature
+            let result_without_creature_replaced = {
+                cells = cells;
+                creature_start = creature_start.Value
             }
+            // Now replace the creature's start point with the appropriate pipe
+            let creature_start_pipe_connections = 
+                result_without_creature_replaced.connecting_pipes_for creature_start.Value
             in
             let creature_start_pipe_shape =
                 PipeShape.values()
                 |> Seq.find (fun candidate_shape ->
                     creature_start_pipe_connections
-                    |> Seq.forall (fun direction -> candidate_shape.connects_to direction)
+                    |> Seq.forall (fun (direction, _) -> candidate_shape.connects_to direction)
                 )
             in
-            pipes <- Map.add creature_start.Value creature_start_pipe_shape pipes;
-            {pipes = pipes; creature_start = creature_start.Value}
+            cells[creature_start.Value.row, creature_start.Value.col] <- Pipe creature_start_pipe_shape;
+            {cells = cells; creature_start = creature_start.Value}
 
-        member this.Item(coords : Coords) = this.pipes[coords]
-        member this.ContainsKey(coords: Coords) = this.pipes.ContainsKey coords
-        member this.Keys = this.pipes.Keys
-        member this.Values = this.pipes.Values
+        member this.Item(coords : Coords) = this.cells[coords.row, coords.col]
+        member this.TryGetPipe (coords : Coords) = 
+            if coords.col < 0 || coords.col >= this.width || coords.row < 0 || coords.row >= this.height then
+                None
+            else
+                match this[coords] with 
+                | Pipe pipeShape -> Some pipeShape
+                | _ -> None
 
         member this.width : int =
-            1 + (
-                this.Keys
-                |> Seq.map _.x
-                |> Seq.max
-            )
+            Array2D.length2 this.cells
 
         member this.height : int =
-            1 + (
-                this.Keys
-                |> Seq.map _.y
-                |> Seq.max
-            )
+            Array2D.length1 this.cells
 
-        member this.connecting_pipes_for (coords : Coords) : Coords seq =
+        member this.connecting_pipes_for (coords : Coords) : (Direction * Coords) seq =
             seq {
                 for direction_from_coords in Direction.values() do
                     let candidate_neighbor = coords.move direction_from_coords in
-                    if this.ContainsKey candidate_neighbor then
-                        let neighbor_pipe = this[candidate_neighbor] in
+                    match this.TryGetPipe candidate_neighbor with
+                    | Some neighbor_pipe -> 
                         let direction_from_neighbor = direction_from_coords.reversed() in
                         if neighbor_pipe.connects_to direction_from_neighbor then
-                            yield candidate_neighbor
+                            yield (direction_from_coords, candidate_neighbor)
+                    | _ -> ()
             }           
 
 
         override this.ToString() : string =
             seq {
-                for y in 0 .. this.height do
-                    for x in 0 .. this.width do
-                        if x = this.creature_start.x && y = this.creature_start.y then
+                for y in 0 .. (this.height - 1) do
+                    for x in 0 .. (this.width - 1) do
+                        if x = this.creature_start.col && y = this.creature_start.row then
                             yield "S"
                         else
-                            match this.pipes.TryFind {x = x; y = y} with
-                            | None -> yield "."
-                            | Some pipe -> yield pipe.ToString()
+                            yield this[{col = x; row = y}].ToString()
                     done;
                     yield "\n"
             } 
@@ -186,7 +193,7 @@ type Grid = {
             let unsettled = new Queue<Coords>([this.creature_start]) in
             while unsettled.Count > 0 do
                 let current = unsettled.Dequeue() in
-                for neighbor in (this.connecting_pipes_for current) do
+                for (_, neighbor) in (this.connecting_pipes_for current) do
                     let distanceThroughCurrent = distancesFromSource[current] + 1 in
                     let existingDistance = 
                         match distancesFromSource.TryFind neighbor with

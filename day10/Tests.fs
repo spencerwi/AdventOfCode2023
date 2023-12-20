@@ -24,18 +24,8 @@ type ``Tests for parsing pipes`` ()=
             "....."
         |] in
         let grid = Grid.parse input_lines in
-        grid.creature_start |> should equal {x = 1; y = 1}
-        Map.toSeq grid.pipes |> should equivalent [
-            ({x = 1; y = 1}, TopLeft)
-            ({x = 2; y = 1}, Horizontal)
-            ({x = 3; y = 1}, TopRight)
-            ({x = 1; y = 2}, Vertical)
-            ({x = 3; y = 2}, Vertical)
-            ({x = 1; y = 3}, BottomLeft)
-            ({x = 2; y = 3}, Horizontal)
-            ({x = 3; y = 3}, BottomRight)
-        ]
-        grid.ToString() |> should equal (String.concat "\n" input_lines)
+        grid.creature_start |> should equal {col = 1; row = 1}
+        grid.ToString() |> should equal <| String.concat "\n" input_lines
 
     [<Test>]
     member this.``It should handle a complex case correctly`` ()=
@@ -62,10 +52,10 @@ type ``Tests for Grid`` ()=
             "....."
         |] in
         let grid = Grid.parse input_lines in
-        grid.connecting_pipes_for {x = 1; y = 1}
+        grid.connecting_pipes_for {col = 1; row = 1}
         |> should equivalent [
-            {x = 1; y = 2}
-            {x = 2; y = 1}
+            (South, {col = 1; row = 2})
+            (East, {col = 2; row = 1})
         ]
 
 
