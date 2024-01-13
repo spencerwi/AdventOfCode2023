@@ -13,7 +13,7 @@ pub fn list_index_of(list : List(a), item: a) -> Result(Int, Nil) {
 	})
 }
 
-pub fn string_index_of(haystack : String, substring: String) -> Int {
+pub fn string_index_of(in haystack : String, find substring: String) -> Int {
 	case haystack {
 		"" -> -1
 		_other -> {
@@ -30,8 +30,20 @@ pub fn string_index_of(haystack : String, substring: String) -> Int {
 	}
 }
 
+pub fn string_last_index_of(haystack : String, substring : String) -> Int {
+	let reversed_index = string_index_of(
+		in: string.reverse(haystack), 
+		find: string.reverse(substring)
+	)
 
-pub const digits : String = "0123456789"
+	case reversed_index {
+		-1 -> -1
+		other -> {string.length(haystack) - other}
+	}
+}
+
+
+pub const digits : String = "123456789"
 pub fn is_digit(x : String) -> Bool {
 	string.contains(does: digits, contain: x)
 }
@@ -67,7 +79,9 @@ pub fn word_or_digit_finder(line: String) -> #(Int, Int) {
 	let occurrences = 
 		iterator.from_list(all_search_terms)
 		|> iterator.map(fn (term) {
-			#(term, string_index_of(line, term), string_index_of(string.reverse(line), string.reverse(term)))
+			let first_occurrence = string_index_of(line, term)
+			let last_occurrence = string_last_index_of(line, term)
+			#(term, first_occurrence, last_occurrence)
 		})
 		|> iterator.filter(fn (match) { match.1 > -1 })
 		|> iterator.to_list
@@ -78,7 +92,7 @@ pub fn word_or_digit_finder(line: String) -> #(Int, Int) {
 		|> list.first
 	let assert Ok(#(last_match, _, _)) = 
 		occurrences
-		|> list.sort(by: fn(a,b) { int.compare(a.2, b.2) })
+		|> list.sort(by: fn(a,b) { int.compare(b.2, a.2) })
 		|> list.first
 
 	let to_int = fn(term) {
@@ -87,9 +101,7 @@ pub fn word_or_digit_finder(line: String) -> #(Int, Int) {
 				let assert Ok(i) = int.parse(term)
 				i
 			}
-			False -> {
-				word_to_digit(term)
-			}
+			False -> word_to_digit(term)
 		}
 	}
 
@@ -101,5 +113,6 @@ pub fn line_to_number(line: String, digit_finder : DigitFinder) -> Int {
 	let #(first_digit, last_digit) = 
 		line
 		|> digit_finder
-	{first_digit * 10} + last_digit
+	let assert Ok(result) = int.undigits([first_digit, last_digit], 10)
+	result
 }
