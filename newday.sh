@@ -15,12 +15,13 @@ touch "day$1/src/lib.gleam"
 
 cat >"day$1/src/day$1.gleam" <<EOF
 import gleam/io
+import gleam/string
 import gleam/erlang
 import lib
 
 pub fn read_all_stdin() -> List(String) {
 	case erlang.get_line("") {
-		Ok(line) -> [line, ..read_all_stdin()]
+		Ok(line) -> [string.trim(line), ..read_all_stdin()]
 		_ -> []
 	}
 }
@@ -53,7 +54,7 @@ version = "1.0.0"
 # links = [{ title = "Website", href = "https://gleam.run" }]
 
 [dependencies]
-gleam_stdlib = "~> 0.32"
+gleam_stdlib = "~> 0.34"
 gleam_erlang = "~> 0.24"
 
 [dev-dependencies]
