@@ -1,12 +1,14 @@
 import gleam/int
 import gleam/io
 import gleam/iterator
+import gleam/string
+
 import gleam/erlang
 import lib
 
 pub fn read_all_stdin() -> List(String) {
 	case erlang.get_line("") {
-		Ok(line) -> [line, ..read_all_stdin()]
+		Ok(line) -> [string.trim(line), ..read_all_stdin()]
 		_ -> []
 	}
 }
@@ -22,14 +24,12 @@ pub fn solve(lines : List(String)) -> #(Int, Int) {
 	lines
 	|> iterator.from_list
 	|> iterator.map(fn (line) { 
-			let part2_result = part2(line)
-			io.println("For '" <> line <> "', part2 is " <> int.to_string(part2_result))
-
-#(part1(line), part2_result)
-			})
-|> iterator.fold(from: #(0, 0), with: fn(acc, current) {
-#(acc.0 + current.0, acc.1 + current.1)
-		})
+		let part2_result = part2(line)
+		#(part1(line), part2_result)
+	})
+	|> iterator.fold(from: #(0, 0), with: fn(acc, current) {
+		#(acc.0 + current.0, acc.1 + current.1)
+	})
 }
 
 pub fn main() {

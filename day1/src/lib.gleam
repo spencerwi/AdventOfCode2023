@@ -8,37 +8,38 @@ pub fn list_index_of(list : List(a), item: a) -> Result(Int, Nil) {
 	iterator.from_list(list)
 	|> iterator.index
 	|> iterator.find(fn (word) { item == word.0 })
-	|> result.map(fn (found) {
-		found.1
-	})
+	|> result.map(fn (found) { found.1 })
 }
 
-pub fn string_index_of(in haystack : String, find substring: String) -> Int {
+pub fn string_index_of(in haystack : String, find substring: String) -> Result(Int, Nil) {
 	case haystack {
-		"" -> -1
+		"" -> Error(Nil)
 		_other -> {
 			case string.starts_with(haystack, substring) {
-				True -> 0
+				True -> Ok(0)
 				False -> {
-					1 + string_index_of(
-						string.drop_left(haystack, up_to: 1), 
-						substring
+					use i <- result.map(
+						string_index_of(
+							string.drop_left(haystack, up_to: 1), 
+							substring
+						)
 					)
+					i + 1
 				}
 			}
 		}
 	}
 }
 
-pub fn string_last_index_of(haystack : String, substring : String) -> Int {
+pub fn string_last_index_of(in haystack : String, find substring : String) -> Result(Int, Nil) {
 	let reversed_index = string_index_of(
 		in: string.reverse(haystack), 
 		find: string.reverse(substring)
 	)
 
 	case reversed_index {
-		-1 -> -1
-		other -> {string.length(haystack) - other}
+		Error(_) -> Error(Nil)
+		Ok(i) -> Ok({string.length(haystack) - 1} - i)
 	}
 }
 
@@ -79,11 +80,16 @@ pub fn word_or_digit_finder(line: String) -> #(Int, Int) {
 	let occurrences = 
 		iterator.from_list(all_search_terms)
 		|> iterator.map(fn (term) {
-			let first_occurrence = string_index_of(line, term)
-			let last_occurrence = string_last_index_of(line, term)
+			let first_occurrence = string_index_of(in: line, find: term)
+			let last_occurrence = string_last_index_of(in: line, find: term)
 			#(term, first_occurrence, last_occurrence)
 		})
-		|> iterator.filter(fn (match) { match.1 > -1 })
+		|> iterator.filter(fn (match) { result.is_ok(match.1) })
+		|> iterator.map(fn (match) {
+			let assert Ok(first_idx) = match.1
+			let assert Ok(last_idx) = match.2
+			#(match.0, first_idx, last_idx)
+		})
 		|> iterator.to_list
 
 	let assert Ok(#(first_match, _, _)) = 
@@ -110,9 +116,7 @@ pub fn word_or_digit_finder(line: String) -> #(Int, Int) {
 
 
 pub fn line_to_number(line: String, digit_finder : DigitFinder) -> Int {
-	let #(first_digit, last_digit) = 
-		line
-		|> digit_finder
+	let #(first_digit, last_digit) = digit_finder(line)
 	let assert Ok(result) = int.undigits([first_digit, last_digit], 10)
 	result
 }

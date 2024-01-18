@@ -36,3 +36,29 @@ pub fn part2_test() {
 	})
 	|> list.fold(from: 0, with: fn(a, b) { a + b })
 }
+
+pub fn word_or_digit_finder_test() {
+	"6tgsl"
+	|> lib.word_or_digit_finder
+	|> should.equal(#(6, 6))
+}
+
+pub fn string_index_of_test() {
+	"6tgsl"
+	|> lib.string_index_of("6")
+	|> should.equal(Ok(0))
+
+	"6tgsl"
+	|> lib.string_index_of("one")
+	|> should.equal(Error(Nil))
+}
+
+pub fn string_last_index_of_test() {
+	"6tgsl" 
+	|> lib.string_last_index_of("6")
+	|> should.equal(Ok(0))
+
+	"6tgsl"
+	|> lib.string_last_index_of("one")
+	|> should.equal(Error(Nil))
+}
